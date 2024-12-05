@@ -28,18 +28,13 @@ class EmailsDataAdmin(admin.ModelAdmin):
         """Envía correos a los registros seleccionados respetando el límite de 400 correos diarios."""
         processed_ids = []
         errors = []
-
-        # Obtener las credenciales activas
         try:
             credentials = Credentials.objects.filter(is_active=True).first()
             if not credentials:
                 self.message_user(request, "No se encontraron credenciales configuradas.", level='error')
                 return
-
-            # Reiniciar el contador si es necesario
             credentials.reset_counter_if_needed()
 
-            # Verificar el límite diario
             if credentials.emails_sent_today > 376:
                 self.message_user(request, f"La cuenta {credentials.email_account} alcanzó su límite diario de 8 correos.", level='error')
                 return
@@ -51,7 +46,6 @@ class EmailsDataAdmin(admin.ModelAdmin):
             self.message_user(request, "No se encontraron credenciales configuradas.", level='error')
             return
 
-        # Obtener el asunto y mensaje
         try:
             subject_and_message = SubjectAndMessage.objects.first()
             if not subject_and_message:
@@ -64,7 +58,6 @@ class EmailsDataAdmin(admin.ModelAdmin):
             self.message_user(request, "No se encontraron mensajes configurados.", level='error')
             return
 
-        # Configuración del servidor SMTP
         try:
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
             server.ehlo()
@@ -73,7 +66,6 @@ class EmailsDataAdmin(admin.ModelAdmin):
             self.message_user(request, f"Error al conectarse al servidor SMTP: {e}", level='error')
             return
 
-        # Enviar correos a los registros seleccionados
         for email_data in queryset:
             if credentials.emails_sent_today > 376:
                 self.message_user(request, f"Límite diario alcanzado para la cuenta {credentials.email_account}.", level='warning')
@@ -82,13 +74,11 @@ class EmailsDataAdmin(admin.ModelAdmin):
             recipient_name = f"{email_data.first_name} {email_data.last_name}"
             recipient_email = email_data.email
 
-            # Personalizar el mensaje y asunto
             personalized_subject = f"{subject}"
             personalized_message = (
                 f"{message_template}\n\n"
             )
 
-            # Construir el correo
             sent_email = (
                 f"From: {name_account} <{email_account}>\n"
                 f"To: {recipient_name} <{recipient_email}>\n"
@@ -97,32 +87,28 @@ class EmailsDataAdmin(admin.ModelAdmin):
             )
 
             try:
-                # Enviar correo
-                server.sendmail(email_account, [recipient_email], sent_email.encode('utf-8'))
-                processed_ids.append(email_data.id)  # Agregar ID procesado
 
-                # Incrementar el contador de correos enviados
+                server.sendmail(email_account, [recipient_email], sent_email.encode('utf-8'))
+                processed_ids.append(email_data.id)  
+
                 credentials.emails_sent_today += 1
                 credentials.save()
             except Exception as e:
                 errors.append(f"No se pudo enviar el correo a {recipient_email}. Error: {e}")
                 self.message_user(request, f"No se pudo enviar el correo a {recipient_email}. Error: {e}", level='error')
 
-        # Cerrar conexión del servidor
         server.close()
 
-        # Mensajes resumen
         if processed_ids:
             self.message_user(request, f"Correos enviados correctamente: {len(processed_ids)}.", level='success')
         if errors:
             self.message_user(request, f"Errores encontrados: {len(errors)}.", level='warning')
 
-    # Registrar la acción personalizada
     actions = [mark_as_priority]
 
     mark_as_priority.short_description = "Enviar correos"
 
-    # Registrar la acción personalizada
+
     actions = [mark_as_priority]
 
     def changelist_view(self, request, extra_context=None):

@@ -97,6 +97,9 @@ DATABASES = {
 }
 
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=15),
