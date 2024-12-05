@@ -29,6 +29,8 @@ class EmailsDataAdmin(admin.ModelAdmin):
         """Envía correos a los registros seleccionados respetando el límite de 400 correos diarios."""
         processed_ids = []
         errors = []
+        start_time = time.time()
+
         try:
             credentials = Credentials.objects.filter(is_active=True).first()
             if not credentials:
@@ -101,10 +103,20 @@ class EmailsDataAdmin(admin.ModelAdmin):
 
         server.close()
 
+        end_time = time.time()  # Finaliza el cronómetro
+        total_time = end_time - start_time  # Calcula el tiempo total en segundos
+        minutes, seconds = divmod(int(total_time), 60)
+
         if processed_ids:
             self.message_user(request, f"Correos enviados correctamente: {len(processed_ids)}.", level='success')
         if errors:
             self.message_user(request, f"Errores encontrados: {len(errors)}.", level='warning')
+        
+        self.message_user(
+        request,
+        f"Se enviaron {len(processed_ids)} correos y se demoró {minutes} minutos y {seconds} segundos en enviarlos.",
+        level='success'
+    )
 
     actions = [mark_as_priority]
 
