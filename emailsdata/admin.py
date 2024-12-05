@@ -90,7 +90,7 @@ class EmailsDataAdmin(admin.ModelAdmin):
             try:
 
                 server.sendmail(email_account, [recipient_email], sent_email.encode('utf-8'))
-                time.sleep(1)
+                time.sleep(2)
                 processed_ids.append(email_data.id)  
 
                 credentials.emails_sent_today += 1
