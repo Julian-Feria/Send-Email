@@ -92,7 +92,7 @@ class EmailsDataAdmin(admin.ModelAdmin):
             try:
 
                 server.sendmail(email_account, [recipient_email], sent_email.encode('utf-8'))
-                time.sleep(2)
+                time.sleep(1)
                 processed_ids.append(email_data.id)  
 
                 credentials.emails_sent_today += 1
@@ -108,15 +108,12 @@ class EmailsDataAdmin(admin.ModelAdmin):
         minutes, seconds = divmod(int(total_time), 60)
 
         if processed_ids:
-            self.message_user(request, f"Correos enviados correctamente: {len(processed_ids)}.", level='success')
+            # self.message_user(request, f"Correos enviados correctamente: {len(processed_ids)}.", level='success')
+            self.message_user(request,f"Se enviaron {len(processed_ids)} correos y se demoró {minutes} minutos y {seconds} segundos en enviarlos.",level='success')
         if errors:
             self.message_user(request, f"Errores encontrados: {len(errors)}.", level='warning')
         
-        self.message_user(
-        request,
-        f"Se enviaron {len(processed_ids)} correos y se demoró {minutes} minutos y {seconds} segundos en enviarlos.",
-        level='success'
-    )
+        # self.message_user(request,f"Se enviaron {len(processed_ids)} correos y se demoró {minutes} minutos y {seconds} segundos en enviarlos.",level='success')
 
     actions = [mark_as_priority]
 
