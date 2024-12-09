@@ -2,9 +2,8 @@ from django.urls import path, reverse
 from django.shortcuts import render, redirect
 import pandas as pd
 import time
-from django.http import JsonResponse
 from django.contrib import admin, messages
-from django.utils.html import format_html
+from django.utils.timezone import now
 from django import forms
 
 from subjectandmessage.models import SubjectAndMessage
@@ -20,16 +19,18 @@ class ExcelUploadForm(forms.Form):
 
 @admin.register(EmailsData)
 class EmailsDataAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'email', 'group')
+    list_display = ('full_name', 'email', 'group', 'last_email_sent_at')
     list_filter = ('group',)
+    ordering = ('last_name', 'first_name')
     list_per_page = 94
 
 
     def mark_as_priority(self, request, queryset):
-        """Envía correos a los registros seleccionados respetando el límite de 400 correos diarios."""
+        """Envía correos a los registros seleccionados respetando el límite de 376 correos diarios."""
         processed_ids = []
         errors = []
         start_time = time.time()
+        batch_timestamp = now()
 
         try:
             credentials = Credentials.objects.filter(is_active=True).first()
@@ -97,14 +98,19 @@ class EmailsDataAdmin(admin.ModelAdmin):
 
                 credentials.emails_sent_today += 1
                 credentials.save()
+
+                # Actualizar la fecha de envío en el modelo
+                email_data.last_email_sent_at = batch_timestamp
+                email_data.save()
+
             except Exception as e:
                 errors.append(f"No se pudo enviar el correo a {recipient_email}. Error: {e}")
                 self.message_user(request, f"No se pudo enviar el correo a {recipient_email}. Error: {e}", level='error')
 
         server.close()
 
-        end_time = time.time()  # Finaliza el cronómetro
-        total_time = end_time - start_time  # Calcula el tiempo total en segundos
+        end_time = time.time()  
+        total_time = end_time - start_time 
         minutes, seconds = divmod(int(total_time), 60)
 
         if processed_ids:
@@ -113,8 +119,6 @@ class EmailsDataAdmin(admin.ModelAdmin):
         if errors:
             self.message_user(request, f"Errores encontrados: {len(errors)}.", level='warning')
         
-        # self.message_user(request,f"Se enviaron {len(processed_ids)} correos y se demoró {minutes} minutos y {seconds} segundos en enviarlos.",level='success')
-
     actions = [mark_as_priority]
 
     mark_as_priority.short_description = "Enviar correos"
